@@ -8,6 +8,7 @@ const openai = new OpenAI({
 export async function POST(req: Request) {
   try {
     const { content, analysisType, documents } = await req.json()
+    console.log('API received:', { content, analysisType })
 
     let systemPrompt = `You are a financial analyst assistant. `
     
@@ -19,15 +20,25 @@ export async function POST(req: Request) {
       systemPrompt += 'Focus on overall company financial health, including ratios and performance metrics.'
     }
 
-    if (documents?.length) {
-      systemPrompt += '\nAnalyze the provided documents in your response.'
-    }
+    // Prepare message content with image if present
+    const userContent = documents?.[0]?.imageUrl 
+      ? [
+          { type: 'text', text: content },
+          { 
+            type: 'image_url',
+            image_url: {
+              url: documents[0].imageUrl,
+              detail: 'high'
+            }
+          }
+        ]
+      : content
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content }
+        { role: 'user', content: userContent }
       ],
       temperature: 0.7,
       max_tokens: 2000

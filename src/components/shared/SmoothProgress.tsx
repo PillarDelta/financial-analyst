@@ -17,7 +17,7 @@ export function SmoothProgress() {
   }, [])
 
   return (
-    <div className="w-full bg-[rgba(255,255,255,0.1)] h-1 rounded overflow-hidden">
+    <div className="w-full bg-[rgba(12, 233, 23, 0.1)] h-1 rounded overflow-hidden">
       <div 
         className="h-full bg-[var(--blue-accent)] transition-all duration-300"
         style={{ width: `${progress}%` }}

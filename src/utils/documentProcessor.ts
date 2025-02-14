@@ -7,17 +7,17 @@ if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 }
 
-export async function processDocument(file: File): Promise<string> {
+export async function processDocument(file: File): Promise<{ content: string, imageUrl?: string }> {
   const fileType = file.type
   const buffer = await file.arrayBuffer()
 
   try {
     if (fileType === 'application/pdf') {
-      return await processPDF(buffer)
+      return { content: await processPDF(buffer) }
     } else if (fileType === 'text/csv' || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-      return await processSpreadsheet(buffer, fileType)
+      return { content: await processSpreadsheet(buffer, fileType) }
     } else if (fileType.startsWith('image/')) {
-      return `Image content from: ${file.name}`
+      return processImage(file)
     }
     throw new Error('Unsupported file type')
   } catch (error) {
@@ -60,4 +60,22 @@ async function processSpreadsheet(buffer: ArrayBuffer, fileType: string): Promis
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
     return XLSX.utils.sheet_to_csv(firstSheet)
   }
+}
+
+async function processImage(file: File): Promise<{ content: string, imageUrl: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve({
+          content: `Image analysis of: ${file.name}`,
+          imageUrl: reader.result // This will be the base64 data URL
+        })
+      } else {
+        reject(new Error('Failed to read image'))
+      }
+    }
+    reader.onerror = () => reject(new Error('Failed to read image'))
+    reader.readAsDataURL(file)
+  })
 } 

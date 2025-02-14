@@ -20,6 +20,8 @@ export function useChat() {
   const [currentInput, setCurrentInput] = useState('')
   const [documents, setDocuments] = useState<string[]>([])
 
+  const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
   const sendMessage = async (content: string) => {
     if (!content.trim()) return
 
@@ -72,15 +74,22 @@ export function useChat() {
     }
   }
 
-  const analyzeDocument = async (content: string) => {
+  const analyzeDocument = async (content: string, imageUrl?: string) => {
     try {
+      console.log('Analyzing document:', { content, imageUrl })
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: `Please analyze this document and provide key insights: ${content}`,
+          content: imageUrl 
+            ? 'Please analyze this image and describe what you see.'
+            : `Please analyze this document and provide key insights: ${content}`,
           analysisType,
-          documents: [content]
+          documents: [{
+            content,
+            imageUrl
+          }]
         })
       })
 
@@ -89,17 +98,17 @@ export function useChat() {
       const data = await response.json()
       
       const analysisMessage: Message = {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         content: data.content,
         type: 'assistant',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, analysisMessage])
     } catch (error) {
-      console.error('Failed to analyze document:', error)
+      console.error('Failed to analyze:', error)
       const errorMessage: Message = {
-        id: Date.now().toString(),
-        content: 'Sorry, I encountered an error analyzing the document.',
+        id: generateUniqueId(),
+        content: 'Sorry, I encountered an error analyzing the content.',
         type: 'assistant',
         timestamp: new Date()
       }
@@ -110,46 +119,35 @@ export function useChat() {
   const handleUpload = async (file: File) => {
     try {
       setIsProcessingFile(true)
-
-      // File preview (user input) appears on the right
+      const processedContent = await processDocument(file)
+      
+      // Create upload message with image if present
       const uploadMessage: Message = {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         content: 'DOCUMENT_PREVIEW',
-        type: 'user',  // This ensures document preview appears on the right
+        type: 'user',
         timestamp: new Date(),
         documents: [{
           name: file.name,
           type: file.type,
-          content: ''
+          content: processedContent.content,
+          imageUrl: processedContent.imageUrl
         }]
       }
+      
       setMessages(prev => [...prev, uploadMessage])
-
-      // Process document
-      const processedContent = await processDocument(file)
-      setDocuments(prev => [...prev, processedContent])
-
-      // Update the preview with processed content
-      setMessages(prev => prev.map(msg => 
-        msg.id === uploadMessage.id 
-          ? {
-              ...msg,
-              documents: [{
-                ...msg.documents![0],
-                content: processedContent
-              }]
-            }
-          : msg
-      ))
-
-      // Send for analysis
-      await analyzeDocument(processedContent)
+      
+      // Send for analysis immediately
+      await analyzeDocument(
+        processedContent.content,
+        processedContent.imageUrl
+      )
 
     } catch (error) {
-      console.error('Failed to upload file:', error)
+      console.error('Upload failed:', error)
       const errorMessage: Message = {
-        id: Date.now().toString(),
-        content: `Failed to process document: ${file.name}. Please try again.`,
+        id: generateUniqueId(),
+        content: `Failed to process ${file.name}. Please try again.`,
         type: 'assistant',
         timestamp: new Date()
       }

@@ -36,7 +36,7 @@ export default function Home() {
         const containerRect = scrollContainer.getBoundingClientRect()
         
         // Reduced mask height by 20%
-        const maskHeight = 400 // Reduced from 500px
+        const maskHeight = 320 // Reduced from 400px
         const safetyMargin = 100
         const targetScroll = scrollContainer.scrollTop + 
           messageRect.bottom - 
@@ -115,6 +115,7 @@ export default function Home() {
           fileName={message.documents[0].name}
           fileType={message.documents[0].type}
           isProcessing={isProcessingFile && message.id === messages[messages.length - 1]?.id}
+          imageUrl={message.documents[0].imageUrl}
         />
       )
     }
@@ -177,7 +178,7 @@ export default function Home() {
 
           {/* Solid mask with matching background color */}
           <div 
-            className="absolute bottom-0 left-0 right-0 bg-[var(--background-dark)] h-[400px]" 
+            className="absolute bottom-0 left-0 right-0 bg-[var(--background-dark)] h-[320px]" 
             style={{ pointerEvents: 'none' }}
           />
         </div>
@@ -223,7 +224,7 @@ export default function Home() {
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
+                  accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
                   disabled={isProcessingFile}
                 />
                 <button

@@ -7,9 +7,10 @@ interface DocumentPreviewProps {
   fileName: string
   fileType: string
   isProcessing?: boolean
+  imageUrl?: string
 }
 
-export function DocumentPreview({ fileName, fileType, isProcessing }: DocumentPreviewProps) {
+export function DocumentPreview({ fileName, fileType, isProcessing, imageUrl }: DocumentPreviewProps) {
   const getIcon = () => {
     if (fileType.includes('pdf')) return <FileText className="w-8 h-8 text-[rgba(255,255,255,0.6)]" />
     if (fileType.includes('sheet') || fileType.includes('csv') || fileType.includes('excel')) {
@@ -28,6 +29,15 @@ export function DocumentPreview({ fileName, fileType, isProcessing }: DocumentPr
           {isProcessing && <SmoothProgress />}
         </div>
       </div>
+      {imageUrl && (
+        <div className="mt-4">
+          <img 
+            src={imageUrl} 
+            alt={fileName}
+            className="max-w-[600px] w-full h-auto rounded"
+          />
+        </div>
+      )}
     </div>
   )
 } 
