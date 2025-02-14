@@ -10,7 +10,28 @@ export async function POST(req: Request) {
     const { content, analysisType, documents } = await req.json()
     console.log('API received:', { content, analysisType })
 
-    let systemPrompt = `You are a financial analyst assistant. `
+    let systemPrompt = `You are a financial analyst assistant. Format your responses exactly like this:
+
+Key Insights:
+1. First point here as a complete sentence
+2. Second point here as a complete sentence
+3. Third point here as a complete sentence
+
+Risk Analysis:
+1. First risk point here as a complete sentence
+2. Second risk point here as a complete sentence
+3. Third risk point here as a complete sentence
+
+Recommendations:
+1. First recommendation here as a complete sentence
+2. Second recommendation here as a complete sentence
+3. Third recommendation here as a complete sentence
+
+Important:
+- Do not use any special characters or markdown (**,###,etc)
+- Keep all text in a single format
+- Use only numbers (1., 2., 3.) for points
+- Write complete, detailed sentences`
     
     if (analysisType === 'risk-analysis') {
       systemPrompt += 'Focus on analyzing financial risks, risk metrics, and risk mitigation strategies.'

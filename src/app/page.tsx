@@ -72,35 +72,21 @@ export default function Home() {
 
   const renderMessage = (message: Message) => {
     if (message.type === 'assistant') {
-      // Format assistant messages with proper spacing and structure
       return (
-        <div className="space-y-6 text-[var(--text-secondary)] leading-relaxed">
+        <div className="space-y-6">
           {message.content.split('\n\n').map((paragraph, i) => {
-            // Handle numbered lists
-            if (paragraph.match(/^\d+\./)) {
+            // Handle main section headers (Key Insights:, Risk Analysis:, etc)
+            if (paragraph.match(/^[A-Z][a-zA-Z\s]+:/)) {
               return (
-                <div key={i} className="pl-6">
-                  <p className="text-base font-light">{paragraph}</p>
-                </div>
-              )
-            }
-            
-            // Handle sections with "**" markers
-            if (paragraph.includes('**')) {
-              return (
-                <div key={i} className="space-y-2">
-                  {paragraph.split('**').map((text, j) => (
-                    <span key={j} className={j % 2 === 1 ? 'text-[var(--text-primary)]' : ''}>
-                      {text}
-                    </span>
-                  ))}
-                </div>
+                <h2 key={i} className="text-[var(--text-primary)] text-xl font-bold mb-4">
+                  {paragraph}
+                </h2>
               )
             }
 
-            // Regular paragraphs
+            // All other text (including numbered points)
             return (
-              <p key={i} className="text-base font-light">
+              <p key={i} className="text-[var(--text-secondary)] text-base">
                 {paragraph}
               </p>
             )
