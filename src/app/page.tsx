@@ -1,101 +1,251 @@
-import Image from "next/image";
+'use client'
+
+import { Upload } from 'lucide-react'
+import { useChat, type AnalysisType } from '@/hooks/useChat'
+import { useRef, useEffect } from 'react'
+import { LoadingIndicator } from '@/components/shared/LoadingIndicator'
+import { DocumentPreview } from '@/components/shared/DocumentPreview'
+import { ProcessIndicator } from '@/components/shared/ProcessIndicator'
+import { SmoothProgress } from '@/components/shared/SmoothProgress'
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const {
+    messages,
+    currentInput,
+    setCurrentInput,
+    analysisType,
+    setAnalysisType,
+    isLoading,
+    isProcessingFile,
+    sendMessage,
+    handleUpload,
+  } = useChat()
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const lastMessageRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (scrollContainerRef.current && lastMessageRef.current) {
+        const scrollContainer = scrollContainerRef.current
+        const lastMessage = lastMessageRef.current
+  
+        // Get positions
+        const messageRect = lastMessage.getBoundingClientRect()
+        const containerRect = scrollContainer.getBoundingClientRect()
+        
+        // Reduced mask height by 20%
+        const maskHeight = 400 // Reduced from 500px
+        const safetyMargin = 100
+        const targetScroll = scrollContainer.scrollTop + 
+          messageRect.bottom - 
+          (containerRect.bottom - maskHeight - safetyMargin)
+  
+        scrollContainer.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        })
+      }
+    }, 100)
+  
+    return () => clearTimeout(timer)
+  }, [messages.length, isLoading]) // Watch for both new messages and loading state
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    sendMessage(currentInput)
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleUpload(file)
+    }
+  }
+
+  const analysisTypes: { id: AnalysisType; label: string }[] = [
+    { id: 'risk-analysis', label: 'Risk Analysis' },
+    { id: 'z-score', label: 'Z-Score' },
+    { id: 'company-health', label: 'Company Health' },
+  ]
+
+  const renderMessage = (message: Message) => {
+    if (message.type === 'assistant') {
+      // Format assistant messages with proper spacing and structure
+      return (
+        <div className="space-y-6 text-[var(--text-secondary)] leading-relaxed">
+          {message.content.split('\n\n').map((paragraph, i) => {
+            // Handle numbered lists
+            if (paragraph.match(/^\d+\./)) {
+              return (
+                <div key={i} className="pl-6">
+                  <p className="text-base font-light">{paragraph}</p>
+                </div>
+              )
+            }
+            
+            // Handle sections with "**" markers
+            if (paragraph.includes('**')) {
+              return (
+                <div key={i} className="space-y-2">
+                  {paragraph.split('**').map((text, j) => (
+                    <span key={j} className={j % 2 === 1 ? 'text-[var(--text-primary)]' : ''}>
+                      {text}
+                    </span>
+                  ))}
+                </div>
+              )
+            }
+
+            // Regular paragraphs
+            return (
+              <p key={i} className="text-base font-light">
+                {paragraph}
+              </p>
+            )
+          })}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      )
+    }
+
+    if (message.content === 'DOCUMENT_PREVIEW' && message.documents?.[0]) {
+      return (
+        <DocumentPreview 
+          fileName={message.documents[0].name}
+          fileType={message.documents[0].type}
+          isProcessing={isProcessingFile && message.id === messages[messages.length - 1]?.id}
+        />
+      )
+    }
+
+    // Regular message with progress indicator while loading
+    if (isLoading && message.id === messages[messages.length - 1]?.id) {
+      return (
+        <div className="space-y-4">
+          <div className="text-[var(--text-secondary)]">{message.content}</div>
+          <SmoothProgress />
+        </div>
+      )
+    }
+
+    return message.content
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {  // Enter without Shift
+      e.preventDefault()  // Prevent new line
+      if (currentInput.trim() && !isLoading && !isProcessingFile) {
+        handleSubmit(e)
+      }
+    }
+  }
+
+  return (
+    <div className="flex-1 ml-[200px] flex flex-col h-full">
+      <div className={`w-full max-w-[1400px] mx-auto flex-1 flex flex-col relative`}>
+        {/* Scrollable content with aggressive fade */}
+        <div className="flex-1 relative">
+          <div 
+            ref={scrollContainerRef}
+            className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-[rgba(255,255,255,0.1)]"
+          >
+            <div className="flex flex-col py-4 space-y-8 pb-[600px]">
+              {messages.map((message, index) => (
+                <div 
+                  key={message.id}
+                  ref={index === messages.length - 1 ? lastMessageRef : null}
+                  className={`${
+                    message.type === 'user'
+                      ? 'flex justify-end'
+                      : 'flex justify-start'
+                  }`}
+                >
+                  <div className={`${
+                    message.type === 'user'
+                      ? 'w-[600px] border border-[rgba(255,255,255,0.1)] rounded p-4'
+                      : 'w-[800px]'
+                  }`}>
+                    <div className="text-[var(--text-secondary)] text-base leading-7"> {/* Better text formatting */}
+                      {renderMessage(message)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Solid mask with matching background color */}
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-[var(--background-dark)] h-[400px]" 
+            style={{ pointerEvents: 'none' }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+
+        {/* Input section */}
+        <div className={`transition-all duration-700 ease-in-out ${
+          messages.length === 0 
+            ? 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+            : 'fixed bottom-[10%] left-1/2 -translate-x-1/2'
+        }`}>
+          <form onSubmit={handleSubmit} className="w-[1000px]">
+            <textarea 
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder={isProcessingFile ? "Processing document..." : "Ask something..."}
+              disabled={isProcessingFile}
+              className="w-full min-h-[100px] bg-transparent border border-[rgba(255,255,255,0.1)] rounded px-4 py-2 text-[var(--text-primary)] text-base font-light resize-none outline-none mb-4"
+            />
+            
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                {analysisTypes.map(type => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setAnalysisType(type.id)}
+                    disabled={isProcessingFile}
+                    className={`px-4 py-2 rounded text-sm font-light ${
+                      analysisType === type.id
+                        ? 'bg-transparent border border-[var(--blue-accent)] text-[var(--blue-accent)]'
+                        : 'bg-transparent border border-[rgba(255,255,255,0.1)] text-[var(--text-secondary)]'
+                    } disabled:opacity-50`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt,.csv,.xlsx"
+                  disabled={isProcessingFile}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessingFile}
+                  className="p-2 rounded border border-[rgba(255,255,255,0.1)] text-[var(--text-secondary)] hover:border-[rgba(255,255,255,0.2)]"
+                >
+                  <Upload className="w-5 h-5" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || isProcessingFile || !currentInput.trim()}
+                  className="border border-[var(--blue-accent)] bg-transparent text-[var(--blue-accent)] px-6 py-2 rounded text-sm font-light tracking-wider disabled:opacity-50 transition-opacity hover:bg-[var(--blue-accent)] hover:text-white"
+                >
+                  {isProcessingFile ? 'PROCESSING...' : isLoading ? 'SENDING...' : 'SEND IT'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-  );
-}
+  )
+} 
